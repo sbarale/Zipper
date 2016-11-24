@@ -10,9 +10,9 @@ class ZipRepository implements RepositoryInterface
     /**
      * Construct with a given path
      *
-     * @param $filePath
+     * @param      $filePath
      * @param bool $create
-     * @param $archive
+     * @param      $archive
      * @throws \Exception
      * @return ZipRepository
      */
@@ -40,6 +40,10 @@ class ZipRepository implements RepositoryInterface
     public function addFile($pathToFile, $pathInArchive)
     {
         $this->archive->addFile($pathToFile, $pathInArchive);
+        $stat = stat($pathToFile);
+        if (is_array($stat)) {
+            $this->archive->setExternalAttributesName($pathToFile, ZipArchive::OPSYS_UNIX, $stat['mode'] << 16);
+        }
     }
 
     /**
@@ -51,18 +55,6 @@ class ZipRepository implements RepositoryInterface
     public function addEmptyDir($dirName)
     {
         $this->archive->addEmptyDir($dirName);
-    }
-
-    /**
-     * Add a file to the opened Archive using its contents
-     *
-     * @param $name
-     * @param $content
-     * @return void
-     */
-    public function addFromString($name, $content)
-    {
-        $this->archive->addFromString($name, $content);
     }
 
     /**
@@ -114,9 +106,9 @@ class ZipRepository implements RepositoryInterface
             if ($stats['size'] == 0 && $stats['crc'] == 0)
                 continue;
 
-            call_user_func_array($callback, array(
+            call_user_func_array($callback, [
                 'file' => $this->archive->getNameIndex($i),
-            ));
+            ]);
         }
     }
 
@@ -155,10 +147,23 @@ class ZipRepository implements RepositoryInterface
 
     /**
      * Closes the archive and saves it
+     *
      * @return void
      */
     public function close()
     {
         @$this->archive->close();
+    }
+
+    /**
+     * Add a file to the opened Archive using its contents
+     *
+     * @param $name
+     * @param $content
+     * @return void
+     */
+    public function addFromString($name, $content)
+    {
+        $this->archive->addFromString($name, $content);
     }
 }
